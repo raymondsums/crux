@@ -1,0 +1,1673 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Crux — Apple Watch Preview</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: #0a0a0a;
+    font-family: -apple-system, 'SF Pro Rounded', 'SF Pro Display', system-ui, sans-serif;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    color: #fff;
+    overflow: hidden;
+  }
+
+  .container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 24px;
+  }
+
+  .label {
+    font-size: 13px;
+    color: #666;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    font-weight: 600;
+  }
+
+  /* Watch frame */
+  .watch {
+    width: 198px;
+    height: 242px;
+    background: #1a1a1a;
+    border-radius: 48px;
+    border: 3px solid #333;
+    position: relative;
+    overflow: hidden;
+    box-shadow:
+      0 0 0 1px rgba(255,255,255,0.05),
+      0 20px 60px rgba(0,0,0,0.6);
+  }
+
+  /* Crown */
+  .crown {
+    position: absolute;
+    right: -14px;
+    top: 70px;
+    width: 10px;
+    height: 40px;
+    background: #333;
+    border-radius: 3px;
+    border: 1px solid #444;
+    cursor: pointer;
+    z-index: 10;
+  }
+  .crown:hover { background: #444; }
+
+  .side-btn {
+    position: absolute;
+    right: -14px;
+    top: 124px;
+    width: 10px;
+    height: 24px;
+    background: #333;
+    border-radius: 3px;
+    border: 1px solid #444;
+  }
+
+  /* Screen */
+  .screen {
+    width: 100%;
+    height: 100%;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .page {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 20px 16px;
+    transition: transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94), opacity 0.4s ease;
+  }
+
+  .page.hidden-up {
+    transform: translateY(-100%);
+    opacity: 0;
+  }
+  .page.hidden-down {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+
+  /* ===== START SCREEN ===== */
+  #startScreen {
+    gap: 0;
+    transition: background-color 0.6s ease;
+    justify-content: flex-start;
+    padding-bottom: 28px;
+  }
+
+  .start-logo {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    position: relative;
+    overflow: hidden;
+  }
+
+
+  #startScreen .app-title {
+    font-size: 40px;
+    font-weight: 800;
+    letter-spacing: 4px;
+    background: linear-gradient(180deg, #fff 30%, #666 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .heart-wrap {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .heart-ripple {
+    position: absolute;
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    border: 1.5px solid rgba(255,59,48,0.3);
+    opacity: 0;
+    animation: ripple var(--beat-duration, 0.85s) ease-out infinite;
+  }
+
+  .heart-ripple:nth-child(2) {
+    animation-delay: calc(var(--beat-duration, 0.85s) * 0.35);
+  }
+
+  @keyframes ripple {
+    0% { transform: scale(0.8); opacity: 0.4; }
+    100% { transform: scale(2.2); opacity: 0; }
+  }
+
+  #startScreen .heart-icon {
+    font-size: 56px;
+    color: #ff3b30;
+    position: relative;
+    z-index: 1;
+  }
+
+  #startScreen .heart-icon::before {
+    content: '♥';
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    filter: blur(16px);
+    opacity: 0;
+    animation: glowPulse var(--beat-duration, 0.85s) ease-in-out infinite;
+  }
+
+  @keyframes heartbeat {
+    0% { transform: scale(1); }
+    15% { transform: scale(1.15); }
+    30% { transform: scale(1); }
+    45% { transform: scale(1.1); }
+    60% { transform: scale(1); }
+    100% { transform: scale(1); }
+  }
+
+  @keyframes glowPulse {
+    0% { opacity: 0.15; }
+    15% { opacity: 0.5; }
+    30% { opacity: 0.15; }
+    45% { opacity: 0.4; }
+    60% { opacity: 0.15; }
+    100% { opacity: 0.15; }
+  }
+
+  #startScreen .heart-icon.beating {
+    animation: heartbeat var(--beat-duration, 0.85s) ease-in-out infinite;
+  }
+
+  .start-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: #30d158;
+    color: #fff;
+    border: none;
+    border-radius: 20px;
+    padding: 8px 18px;
+    font-size: 13px;
+    font-weight: 700;
+    font-family: inherit;
+    cursor: pointer;
+    transition: transform 0.15s, background 0.2s;
+    position: relative;
+    overflow: hidden;
+  }
+  .start-btn:active { transform: scale(0.95); background: #28b84c; }
+
+  .start-btn::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 60%;
+    height: 100%;
+    background: linear-gradient(
+      105deg,
+      transparent 20%,
+      rgba(255,255,255,0.25) 45%,
+      rgba(255,255,255,0.4) 50%,
+      rgba(255,255,255,0.25) 55%,
+      transparent 80%
+    );
+    animation: shimmer 3s ease-in-out infinite;
+  }
+
+  @keyframes shimmer {
+    0% { left: -100%; }
+    40% { left: 120%; }
+    100% { left: 120%; }
+  }
+
+  .settings-btn {
+    background: none;
+    border: none;
+    color: #555;
+    font-size: 16px;
+    cursor: pointer;
+    padding: 4px;
+    transition: color 0.2s;
+  }
+  .settings-btn:hover { color: #888; }
+
+  /* ===== HR ACTIVE SCREEN ===== */
+  #hrScreen {
+    gap: 2px;
+    background: #000;
+  }
+
+  /* Green edge glow for recovered state */
+  .edge-glow {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 1;
+    opacity: 0;
+    transition: opacity 0.6s ease;
+    box-shadow: inset 0 0 20px 6px rgba(48,209,88,0.35);
+    border-radius: 45px;
+  }
+
+  .edge-glow.visible {
+    opacity: 1;
+  }
+
+  /* State indicator bars */
+  .state-bars {
+    display: flex;
+    gap: 4px;
+    width: 80px;
+    margin-top: 4px;
+  }
+
+  .state-bar {
+    flex: 1;
+    height: 4px;
+    border-radius: 2px;
+    background: rgba(255,255,255,0.08);
+    transition: background 0.5s ease, box-shadow 0.5s ease;
+  }
+
+  .state-bar.red.active {
+    background: rgba(255,59,48,0.5);
+    box-shadow: 0 0 6px rgba(255,59,48,0.2);
+  }
+
+  .state-bar.yellow.active {
+    background: rgba(255,204,0,0.45);
+    box-shadow: 0 0 6px rgba(255,204,0,0.15);
+  }
+
+  .state-bar.green.active {
+    background: #30d158;
+    box-shadow: 0 0 8px rgba(48,209,88,0.4);
+  }
+
+  .ready-label {
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 1.2px;
+    text-transform: uppercase;
+    color: #30d158;
+    opacity: 0;
+    transition: opacity 0.4s ease;
+    height: 12px;
+  }
+
+  .state-bars {
+    margin-top: 0;
+    margin-bottom: 0;
+  }
+
+  .ready-label.visible {
+    opacity: 1;
+  }
+
+  .hr-center {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    padding-top: 24px;
+  }
+
+  .hr-group {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .hr-display {
+    display: flex;
+    align-items: baseline;
+    gap: 4px;
+  }
+
+  .hr-heart {
+    font-size: 16px;
+    transition: color 0.5s ease, transform 0.3s ease;
+  }
+
+  .hr-number {
+    font-size: 64px;
+    font-weight: 800;
+    font-variant-numeric: tabular-nums;
+    line-height: 1;
+    transition: color 0.3s;
+  }
+
+  .hr-unit {
+    font-size: 9px;
+    color: #666;
+    letter-spacing: 1px;
+    font-weight: 600;
+    margin-top: 2px;
+  }
+
+  .hr-elapsed {
+    font-size: 9px;
+    font-weight: 700;
+    color: #fff;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0.5px;
+    margin-bottom: 4px;
+  }
+
+  /* Stop button */
+  .stop-btn {
+    position: absolute;
+    bottom: 16px;
+    right: 16px;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: rgba(255,59,48,0.2);
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 5;
+    transition: transform 0.15s, background 0.15s;
+  }
+  .stop-btn:active { transform: scale(0.9); background: rgba(255,59,48,0.35); }
+
+  .stop-btn-icon {
+    width: 10px;
+    height: 10px;
+    background: #ff3b30;
+    border-radius: 2px;
+  }
+
+  /* Long-hold action sheet */
+  .action-sheet-overlay {
+    position: absolute;
+    inset: 0;
+    z-index: 20;
+    background: #000;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s ease;
+    border-radius: 45px;
+  }
+
+  .action-sheet-overlay.visible {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  .action-btn {
+    width: 120px;
+    padding: 10px 0;
+    border: none;
+    border-radius: 12px;
+    font-size: 13px;
+    font-weight: 700;
+    font-family: inherit;
+    cursor: pointer;
+    transition: transform 0.1s;
+  }
+  .action-btn:active { transform: scale(0.95); }
+
+  .action-btn.pause {
+    background: rgba(255,204,0,0.2);
+    color: #ffcc00;
+  }
+
+  .action-btn.finish {
+    background: rgba(255,59,48,0.2);
+    color: #ff3b30;
+  }
+
+  .action-btn.cancel {
+    background: rgba(255,255,255,0.1);
+    color: rgba(255,255,255,0.5);
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    border-radius: 50%;
+    font-size: 13px;
+    font-weight: 800;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* Pulse animation */
+  @keyframes pulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.35); }
+  }
+  .hr-heart.pulsing {
+    animation: pulse 0.8s ease-in-out infinite;
+  }
+
+  /* ===== ROUTE LOGGER ===== */
+  #routeScreen {
+    padding: 24px 16px 16px;
+    justify-content: flex-start;
+    gap: 0;
+  }
+
+  .route-header {
+    display: flex;
+    justify-content: space-between;
+    width: 100%;
+    margin-bottom: 6px;
+    align-items: center;
+  }
+
+  .route-header .label-left {
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 1.2px;
+    color: #666;
+  }
+
+  .route-header .count-right {
+    font-size: 9px;
+    font-weight: 700;
+    color: #fff;
+  }
+  .route-header .count-right span {
+    color: #666;
+    font-weight: 500;
+  }
+
+  /* Vertical bars container */
+  .route-columns-wrapper {
+    width: 100%;
+    flex: 1;
+    position: relative;
+    overflow: hidden;
+    touch-action: pan-x;
+  }
+
+  .route-columns {
+    display: flex;
+    gap: 6px;
+    height: 100%;
+    justify-content: center;
+    align-items: stretch;
+    transition: transform 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  }
+
+  .grade-col {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    cursor: pointer;
+    border-radius: 8px;
+    padding: 6px 2px 8px;
+    transition: background 0.15s;
+    min-width: 0;
+  }
+  .grade-col:active { background: rgba(255,255,255,0.06); }
+
+  .grade-col .grade-label {
+    font-size: 11px;
+    font-weight: 800;
+    width: auto;
+    text-align: center;
+    flex-shrink: 0;
+  }
+
+  .vbar-track {
+    flex: 1;
+    width: 100%;
+    background: rgba(255,255,255,0.06);
+    border-radius: 6px;
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+  }
+
+  .vbar-fill {
+    width: 100%;
+    border-radius: 6px;
+    transition: height 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    padding-top: 4px;
+  }
+
+  .vbar-count {
+    font-size: 10px;
+    font-weight: 800;
+    color: #fff;
+  }
+
+  /* Swipe arrows */
+  .swipe-arrows {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    margin-top: 4px;
+    flex-shrink: 0;
+  }
+
+  .swipe-arrow {
+    background: none;
+    border: none;
+    color: #444;
+    font-size: 12px;
+    cursor: pointer;
+    padding: 4px 8px;
+    transition: color 0.2s;
+    font-family: inherit;
+    font-weight: 700;
+  }
+  .swipe-arrow:hover { color: #888; }
+  .swipe-arrow:disabled { color: #1a1a1a; cursor: default; }
+
+  .swipe-range {
+    font-size: 8px;
+    color: #444;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+  }
+
+  /* ===== SUMMARY SCREEN ===== */
+  #summaryScreen {
+    padding: 16px 14px;
+    justify-content: flex-start;
+    gap: 10px;
+    overflow-y: auto;
+  }
+
+  .summary-title {
+    font-size: 13px;
+    font-weight: 800;
+    color: #30d158;
+    align-self: flex-start;
+  }
+
+  /* Mini HR chart */
+  .hr-chart {
+    width: 100%;
+    height: 56px;
+    position: relative;
+  }
+
+  .hr-chart canvas {
+    width: 100%;
+    height: 100%;
+  }
+
+  .hr-chart-label {
+    font-size: 8px;
+    font-weight: 700;
+    color: #666;
+    letter-spacing: 1px;
+    margin-bottom: 3px;
+    align-self: flex-start;
+  }
+
+  .stats-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+    width: 100%;
+  }
+
+  .stat-box {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+  }
+
+  .stat-label {
+    font-size: 8px;
+    color: #666;
+    font-weight: 600;
+  }
+
+  .stat-value {
+    font-size: 12px;
+    font-weight: 800;
+    color: #fff;
+  }
+
+  .summary-routes-label {
+    font-size: 8px;
+    font-weight: 700;
+    color: #666;
+    letter-spacing: 1px;
+    align-self: flex-start;
+    margin-top: 4px;
+  }
+
+  .summary-pyramid {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+  }
+
+  .pyramid-row {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .pyramid-label {
+    font-size: 9px;
+    font-weight: 800;
+    width: 24px;
+  }
+
+  .pyramid-bar {
+    height: 12px;
+    border-radius: 3px;
+    transition: width 0.4s ease;
+  }
+
+  .pyramid-count {
+    font-size: 9px;
+    color: #666;
+    font-weight: 600;
+  }
+
+  .done-btn {
+    background: #30d158;
+    color: #fff;
+    border: none;
+    border-radius: 20px;
+    padding: 8px 0;
+    width: 100%;
+    font-size: 13px;
+    font-weight: 700;
+    font-family: inherit;
+    cursor: pointer;
+    margin-top: 4px;
+    transition: transform 0.15s;
+  }
+  .done-btn:active { transform: scale(0.95); }
+
+  /* ===== PAGE INDICATOR ===== */
+  .page-dots {
+    position: absolute;
+    right: 6px;
+    top: 50%;
+    transform: translateY(-50%);
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    z-index: 5;
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+  .page-dots.visible { opacity: 1; }
+
+  .page-dot {
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.3);
+    transition: background 0.3s, transform 0.3s;
+  }
+  .page-dot.active {
+    background: #fff;
+    transform: scale(1.3);
+  }
+
+  /* ===== HISTORY SCREEN ===== */
+  #historyScreen {
+    padding: 16px 12px;
+    justify-content: flex-start;
+    gap: 8px;
+  }
+
+  .history-title {
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 1.2px;
+    color: #666;
+    align-self: flex-start;
+  }
+
+  .history-list {
+    width: 100%;
+    flex: 1;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .history-empty {
+    font-size: 10px;
+    color: rgba(255,255,255,0.25);
+    text-align: center;
+    margin-top: 40px;
+  }
+
+  .session-card {
+    background: rgba(255,255,255,0.05);
+    border-radius: 10px;
+    padding: 8px 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .session-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .session-date {
+    font-size: 11px;
+    font-weight: 700;
+  }
+
+  .session-duration {
+    font-size: 9px;
+    color: #666;
+    font-weight: 600;
+  }
+
+  .session-stats {
+    display: flex;
+    gap: 10px;
+  }
+
+  .session-stat {
+    display: flex;
+    align-items: center;
+    gap: 3px;
+    font-size: 9px;
+    font-weight: 700;
+  }
+
+  .session-stat .dot {
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  /* ===== INSTRUCTIONS ===== */
+  .instructions {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    max-width: 280px;
+  }
+
+  .instruction {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    color: #555;
+  }
+
+  .instruction kbd {
+    background: #222;
+    border: 1px solid #333;
+    border-radius: 4px;
+    padding: 2px 6px;
+    font-size: 10px;
+    color: #888;
+    font-family: inherit;
+    white-space: nowrap;
+  }
+
+  /* Scroll hint animation */
+  @keyframes scrollHint {
+    0%, 100% { opacity: 0; transform: translateY(0); }
+    40%, 60% { opacity: 1; }
+    100% { transform: translateY(6px); opacity: 0; }
+  }
+
+  .scroll-hint {
+    position: absolute;
+    bottom: 8px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .scroll-hint.visible {
+    animation: scrollHint 2s ease-in-out infinite;
+  }
+
+  .scroll-hint-chevron {
+    font-size: 8px;
+    color: rgba(255,255,255,0.4);
+  }
+</style>
+</head>
+<body>
+
+<div class="container">
+  <div class="label">Crux — Apple Watch Preview</div>
+
+  <div class="watch">
+    <div class="crown" id="crown" title="Click to scroll pages"></div>
+    <div class="side-btn"></div>
+
+    <div class="screen" id="screen">
+      <!-- Page dots -->
+      <div class="page-dots" id="pageDots">
+        <div class="page-dot active" data-page="0"></div>
+        <div class="page-dot" data-page="1"></div>
+      </div>
+
+      <!-- History (below start screen) -->
+      <div class="page hidden-down" id="historyScreen">
+        <div class="history-title">HISTORY</div>
+        <div class="history-list" id="historyList">
+          <div class="history-empty">No sessions yet</div>
+        </div>
+      </div>
+
+      <!-- Start Screen -->
+      <div class="page" id="startScreen">
+        <div class="start-logo">
+          <div class="app-title">CRUX</div>
+          <div class="heart-wrap">
+            <div class="heart-ripple"></div>
+            <div class="heart-ripple"></div>
+            <div class="heart-icon">♥</div>
+          </div>
+        </div>
+        <button class="start-btn" id="startBtn">▶ Start Climb</button>
+      </div>
+
+      <!-- HR Active Screen -->
+      <div class="page hidden-down" id="hrScreen">
+        <div class="edge-glow" id="edgeGlow"></div>
+
+        <div class="ready-label" id="readyLabel">READY TO CLIMB</div>
+        <div class="state-bars" id="stateBars">
+          <div class="state-bar red" id="barRed"></div>
+          <div class="state-bar yellow" id="barYellow"></div>
+          <div class="state-bar green" id="barGreen"></div>
+        </div>
+
+        <div class="hr-center">
+          <div class="hr-group">
+            <div class="hr-display">
+              <span class="hr-heart" id="hrHeart">♥</span>
+              <span class="hr-number" id="hrNumber">--</span>
+            </div>
+            <div class="hr-unit">BPM</div>
+          </div>
+        </div>
+
+        <div style="display:flex;align-items:baseline;gap:4px;margin-bottom:4px">
+          <div class="hr-elapsed" id="hrElapsed">0:00</div>
+          <div style="font-size:7px;font-weight:600;color:rgba(255,255,255,0.3);letter-spacing:0.8px;text-transform:uppercase">Elapsed</div>
+        </div>
+        <div class="action-sheet-overlay" id="actionSheet">
+          <button class="action-btn pause" id="pauseBtn">Pause</button>
+          <button class="action-btn finish" id="finishBtn">End Workout</button>
+          <button class="action-btn cancel" id="cancelBtn">✕</button>
+        </div>
+      </div>
+
+      <!-- Route Logger -->
+      <div class="page hidden-down" id="routeScreen">
+        <div class="route-header">
+          <div class="label-left">ROUTES</div>
+          <div class="count-right"><span id="totalSends">0</span> <span>sends</span></div>
+        </div>
+
+        <div class="route-columns-wrapper" id="routeWrapper">
+          <div class="route-columns" id="routeColumns"></div>
+        </div>
+
+        <div class="swipe-arrows">
+          <button class="swipe-arrow" id="swipeLeft">‹</button>
+          <span class="swipe-range" id="swipeRange"></span>
+          <button class="swipe-arrow" id="swipeRight">›</button>
+        </div>
+      </div>
+
+      <!-- Summary Screen -->
+      <div class="page hidden-down" id="summaryScreen">
+        <div class="summary-title">Session Complete</div>
+
+        <div class="hr-chart-label">HEART RATE</div>
+        <div class="hr-chart">
+          <canvas id="hrChart"></canvas>
+        </div>
+
+        <div class="stats-grid">
+          <div class="stat-box">
+            <div class="stat-label">Duration</div>
+            <div class="stat-value" id="statDuration">--</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-label">Peak HR</div>
+            <div class="stat-value" id="statPeakHR">--</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-label">Active</div>
+            <div class="stat-value" id="statActive">--</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-label">Rest</div>
+            <div class="stat-value" id="statRest">--</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-label">Recoveries</div>
+            <div class="stat-value" id="statRecoveries">--</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-label">Avg Recovery</div>
+            <div class="stat-value" id="statAvgRecovery">--</div>
+          </div>
+        </div>
+
+        <div class="summary-routes-label">ROUTES SENT</div>
+        <div class="summary-pyramid" id="summaryPyramid"></div>
+
+        <button class="done-btn" id="doneBtn">Done</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="instructions">
+    <div class="instruction"><kbd>Click Start</kbd> begin simulated session</div>
+    <div class="instruction"><kbd>Scroll / Crown</kbd> switch to route logger</div>
+    <div class="instruction"><kbd>Tap grades</kbd> log completed routes</div>
+    <div class="instruction"><kbd>Swipe right</kbd> on HR screen to end workout</div>
+  </div>
+</div>
+
+<script>
+  // ===== STATE =====
+  let currentPage = 0; // 0 = hr, 1 = route
+  let isActive = false;
+  let showingSummary = false;
+
+  // HR simulation
+  let hr = 72;
+  let targetHR = 72;
+  let hrHistory = [];
+  let peakHR = 0;
+  let simInterval = null;
+  let climbingState = 'idle'; // idle, elevated, recovering, recovered
+  const RECOVERY_THRESHOLD = 100;
+
+  // Climb simulation cycle
+  let simPhase = 'resting'; // resting, climbing, cooling
+  let phaseTimer = 0;
+
+  // Route log
+  const ALL_GRADES = [0,1,2,3,4,5,6,7,8,9,10,11,12];
+  let routeCounts = {};
+  ALL_GRADES.forEach(g => routeCounts[g] = 0);
+  let totalSends = 0;
+  const VISIBLE_COUNT = 5;
+  let visibleStart = 2; // show V2–V6 by default
+
+  // Session stats
+  let sessionStart = null;
+  let restTime = 0;
+  let activeTime = 0;
+  let recoveryCount = 0;
+  let recoveryTimes = [];
+  let lastElevatedTime = null;
+
+  // Home page state
+  let homePage = 0; // 0 = start, 1 = history
+
+  // Session history storage
+  let sessionHistoryData = JSON.parse(localStorage.getItem('cruxHistory') || '[]');
+
+  // ===== HEARTBEAT ON START SCREEN =====
+  const startHeart = document.querySelector('#startScreen .heart-wrap .heart-icon');
+  // Simulate resting HR ~68 bpm, sync pulse animation
+  const restingBPM = 68;
+  const beatDuration = 60 / restingBPM; // seconds per beat
+  startHeart.style.setProperty('--beat-duration', beatDuration + 's');
+  startHeart.classList.add('beating');
+
+  // ===== ELEMENTS =====
+  const startScreen = document.getElementById('startScreen');
+  const historyScreen = document.getElementById('historyScreen');
+  const hrScreen = document.getElementById('hrScreen');
+  const routeScreen = document.getElementById('routeScreen');
+  const summaryScreen = document.getElementById('summaryScreen');
+  const startBtn = document.getElementById('startBtn');
+  const doneBtn = document.getElementById('doneBtn');
+  const hrNumber = document.getElementById('hrNumber');
+  const hrHeart = document.getElementById('hrHeart');
+  const barRed = document.getElementById('barRed');
+  const barYellow = document.getElementById('barYellow');
+  const barGreen = document.getElementById('barGreen');
+  const readyLabel = document.getElementById('readyLabel');
+  const pageDots = document.getElementById('pageDots');
+  const totalSendsEl = document.getElementById('totalSends');
+
+  // ===== START WORKOUT =====
+  startBtn.addEventListener('click', () => {
+    isActive = true;
+    sessionStart = Date.now();
+    hr = 78;
+    peakHR = 78;
+    hrHistory = [];
+    recoveryCount = 0;
+    recoveryTimes = [];
+    restTime = 0;
+    activeTime = 0;
+    routeCounts = { 2: 0, 3: 0, 4: 0, 5: 0, 6: 0 };
+    totalSends = 0;
+    totalSendsEl.textContent = '0';
+    resetBars();
+
+    // Transition
+    startScreen.classList.add('hidden-up');
+    historyScreen.classList.add('hidden-down');
+    hrScreen.classList.remove('hidden-down', 'hidden-up');
+    homePage = 0;
+    pageDots.classList.add('visible');
+
+
+    // Start elapsed timer
+    hrElapsed.textContent = '0:00';
+    startElapsedTimer();
+
+    // Start simulation
+    simPhase = 'resting';
+    phaseTimer = 0;
+    startSimulation();
+  });
+
+  // ===== LONG-HOLD TO PAUSE/FINISH =====
+  const actionSheet = document.getElementById('actionSheet');
+  let holdTimer = null;
+
+  function startHold() {
+    if (!isActive || showingSummary) return;
+    holdTimer = setTimeout(() => {
+      actionSheet.classList.add('visible');
+    }, 500);
+  }
+
+  function cancelHold() {
+    clearTimeout(holdTimer);
+  }
+
+  hrScreen.addEventListener('mousedown', startHold);
+  hrScreen.addEventListener('mouseup', cancelHold);
+  hrScreen.addEventListener('mouseleave', cancelHold);
+  hrScreen.addEventListener('touchstart', (e) => { startHold(); });
+  hrScreen.addEventListener('touchend', cancelHold);
+
+  document.getElementById('finishBtn').addEventListener('click', () => {
+    actionSheet.classList.remove('visible');
+    endWorkout();
+  });
+
+  document.getElementById('pauseBtn').addEventListener('click', () => {
+    actionSheet.classList.remove('visible');
+    // Pause simulation for demo
+    clearInterval(simInterval);
+    stopElapsedTimer();
+  });
+
+  document.getElementById('cancelBtn').addEventListener('click', () => {
+    actionSheet.classList.remove('visible');
+  });
+
+  function endWorkout() {
+    isActive = false;
+    showingSummary = true;
+    clearInterval(simInterval);
+    stopElapsedTimer();
+
+    swipeEndThumb.style.left = THUMB_PAD + 'px';
+    swipeEndFill.style.width = '0%';
+
+    hrScreen.classList.add('hidden-up');
+    routeScreen.classList.add('hidden-down');
+    pageDots.classList.remove('visible');
+
+    summaryScreen.classList.remove('hidden-down', 'hidden-up');
+    renderSummary();
+  }
+
+  // ===== DONE =====
+  doneBtn.addEventListener('click', () => {
+    showingSummary = false;
+    currentPage = 0;
+    homePage = 0;
+
+    // Save session to history
+    saveSession();
+
+    summaryScreen.classList.add('hidden-down');
+    startScreen.classList.remove('hidden-up', 'hidden-down');
+    historyScreen.classList.add('hidden-down');
+
+    // Reset state
+    climbingState = 'idle';
+    hrScreen.style.backgroundColor = '#000';
+
+    // Render updated history
+    renderHistory();
+
+    // Show dots for home pages
+    updateHomeDots();
+    pageDots.classList.add('visible');
+  });
+
+  function saveSession() {
+    const duration = sessionStart ? (Date.now() - sessionStart) / 1000 : 0;
+    const avgRec = recoveryTimes.length > 0
+      ? recoveryTimes.reduce((a, b) => a + b, 0) / recoveryTimes.length
+      : 0;
+
+    const session = {
+      date: new Date().toISOString(),
+      duration,
+      peakHR: Math.round(peakHR),
+      recoveries: recoveryCount,
+      avgRecovery: avgRec,
+      activeTime,
+      restTime,
+      climbs: { ...routeCounts },
+      totalClimbs: totalSends
+    };
+
+    sessionHistoryData.unshift(session);
+    if (sessionHistoryData.length > 20) sessionHistoryData.pop();
+    localStorage.setItem('cruxHistory', JSON.stringify(sessionHistoryData));
+  }
+
+  function renderHistory() {
+    const list = document.getElementById('historyList');
+
+    if (sessionHistoryData.length === 0) {
+      list.innerHTML = '<div class="history-empty">No sessions yet</div>';
+      return;
+    }
+
+    list.innerHTML = sessionHistoryData.slice(0, 10).map(s => {
+      const d = new Date(s.date);
+      const dateStr = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      const durStr = formatTime(s.duration);
+
+      return `
+        <div class="session-card">
+          <div class="session-card-header">
+            <span class="session-date">${dateStr}</span>
+            <span class="session-duration">${durStr}</span>
+          </div>
+          <div class="session-stats">
+            <span class="session-stat"><span class="dot" style="background:#ff3b30"></span>${s.peakHR} bpm</span>
+            ${s.totalClimbs > 0 ? `<span class="session-stat"><span class="dot" style="background:#007aff"></span>${s.totalClimbs} sends</span>` : ''}
+            <span class="session-stat"><span class="dot" style="background:#30d158"></span>${s.recoveries}×</span>
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  function updateHomeDots() {
+    const dots = document.querySelectorAll('.page-dot');
+    dots[0].classList.toggle('active', homePage === 0);
+    dots[1].classList.toggle('active', homePage === 1);
+  }
+
+  // Initial history render
+  renderHistory();
+  pageDots.classList.add('visible');
+
+  // ===== PAGE SCROLLING =====
+  const screen = document.getElementById('screen');
+  screen.addEventListener('wheel', (e) => {
+    if (showingSummary) return;
+    e.preventDefault();
+
+    // Home screen scrolling (start ↔ history)
+    if (!isActive) {
+      if (e.deltaY > 0 && homePage === 0) {
+        homePage = 1;
+        startScreen.classList.add('hidden-up');
+        historyScreen.classList.remove('hidden-down', 'hidden-up');
+        updateHomeDots();
+      } else if (e.deltaY < 0 && homePage === 1) {
+        homePage = 0;
+        historyScreen.classList.add('hidden-down');
+        startScreen.classList.remove('hidden-down', 'hidden-up');
+        updateHomeDots();
+      }
+      return;
+    }
+
+    // Active workout scrolling (HR ↔ routes)
+    if (e.deltaY > 0 && currentPage === 0) {
+      currentPage = 1;
+      hrScreen.classList.add('hidden-up');
+      routeScreen.classList.remove('hidden-down', 'hidden-up');
+      updateDots();
+    } else if (e.deltaY < 0 && currentPage === 1) {
+      currentPage = 0;
+      routeScreen.classList.add('hidden-down');
+      hrScreen.classList.remove('hidden-down', 'hidden-up');
+      updateDots();
+    }
+  }, { passive: false });
+
+  // Crown click also toggles
+  document.getElementById('crown').addEventListener('click', () => {
+    if (!isActive || showingSummary) return;
+    if (currentPage === 0) {
+      currentPage = 1;
+      hrScreen.classList.add('hidden-up');
+      routeScreen.classList.remove('hidden-down', 'hidden-up');
+    } else {
+      currentPage = 0;
+      routeScreen.classList.add('hidden-down');
+      hrScreen.classList.remove('hidden-down', 'hidden-up');
+    }
+    updateDots();
+  });
+
+  function updateDots() {
+    document.querySelectorAll('.page-dot').forEach((dot, i) => {
+      dot.classList.toggle('active', i === currentPage);
+    });
+  }
+
+  // ===== ELAPSED TIMER =====
+  const hrElapsed = document.getElementById('hrElapsed');
+  let elapsedInterval = null;
+
+  function startElapsedTimer() {
+    elapsedInterval = setInterval(() => {
+      if (!sessionStart || !isActive) return;
+      const secs = Math.floor((Date.now() - sessionStart) / 1000);
+      const m = Math.floor(secs / 60);
+      const s = secs % 60;
+      hrElapsed.textContent = m + ':' + String(s).padStart(2, '0');
+    }, 1000);
+  }
+
+  function stopElapsedTimer() {
+    clearInterval(elapsedInterval);
+  }
+
+  // ===== ROUTE LOGGING =====
+  const GRADE_COLORS = {
+    0: '#999', 1: '#999', 2: '#999', 3: '#999', 4: '#999',
+    5: '#999', 6: '#999', 7: '#999', 8: '#999', 9: '#999',
+    10: '#999', 11: '#999', 12: '#999'
+  };
+
+  function renderColumns() {
+    const container = document.getElementById('routeColumns');
+    container.innerHTML = '';
+
+    const visibleGrades = ALL_GRADES.slice(visibleStart, visibleStart + VISIBLE_COUNT);
+    const maxCount = Math.max(...visibleGrades.map(g => routeCounts[g]), 1);
+
+    visibleGrades.forEach(grade => {
+      const col = document.createElement('div');
+      col.className = 'grade-col';
+      col.dataset.grade = grade;
+
+      const color = GRADE_COLORS[grade];
+      const count = routeCounts[grade];
+      const pct = count > 0 ? Math.max((count / maxCount) * 100, 12) : 0;
+
+      // Progressive brightness: lower grades = brighter, higher = more gray
+      const brightness = Math.max(0.3, 1.0 - (grade * 0.06));
+      const labelColor = `rgba(255,255,255,${brightness})`;
+      const fillColor = `rgba(255,255,255,${brightness * 0.3})`;
+
+      const trackColor = `rgba(255,255,255,${brightness * 0.06})`;
+
+      col.innerHTML = `
+        <div class="grade-label" style="color:${labelColor}">V${grade}</div>
+        <div class="vbar-track" style="background:${trackColor}">
+          <div class="vbar-fill" style="height:${pct}%;background:${fillColor}">
+            ${count > 0 ? `<span class="vbar-count">${count}</span>` : ''}
+          </div>
+        </div>
+      `;
+
+      col.addEventListener('click', () => {
+        if (!isActive) return;
+        routeCounts[grade]++;
+        totalSends++;
+        totalSendsEl.textContent = totalSends;
+        renderColumns();
+      });
+
+      container.appendChild(col);
+    });
+
+    // Update range label and arrow states
+    const end = Math.min(visibleStart + VISIBLE_COUNT - 1, ALL_GRADES.length - 1);
+    document.getElementById('swipeRange').textContent = `V${visibleStart}–V${end}`;
+    document.getElementById('swipeLeft').disabled = visibleStart <= 0;
+    document.getElementById('swipeRight').disabled = visibleStart + VISIBLE_COUNT >= ALL_GRADES.length;
+  }
+
+  const STEP = 3;
+
+  function shiftGrades(direction) {
+    // direction: 1 = higher grades, -1 = lower grades
+    const maxStart = ALL_GRADES.length - VISIBLE_COUNT;
+    visibleStart = Math.max(0, Math.min(visibleStart + direction * STEP, maxStart));
+    renderColumns();
+  }
+
+  // Arrow buttons
+  document.getElementById('swipeLeft').addEventListener('click', () => shiftGrades(-1));
+  document.getElementById('swipeRight').addEventListener('click', () => shiftGrades(1));
+
+  // Touch swipe on the route columns
+  let routeTouchStartX = 0;
+  const routeWrapper = document.getElementById('routeWrapper');
+  routeWrapper.addEventListener('touchstart', (e) => {
+    routeTouchStartX = e.touches[0].clientX;
+  });
+  routeWrapper.addEventListener('touchend', (e) => {
+    const dx = e.changedTouches[0].clientX - routeTouchStartX;
+    if (Math.abs(dx) > 30) {
+      shiftGrades(dx < 0 ? 1 : -1);
+    }
+  });
+
+  // Mouse swipe on route columns (for preview)
+  let routeMouseStartX = 0;
+  let routeMouseDown = false;
+  routeWrapper.addEventListener('mousedown', (e) => {
+    routeMouseDown = true;
+    routeMouseStartX = e.clientX;
+  });
+  routeWrapper.addEventListener('mouseup', (e) => {
+    if (!routeMouseDown) return;
+    routeMouseDown = false;
+    const dx = e.clientX - routeMouseStartX;
+    if (Math.abs(dx) > 30) {
+      shiftGrades(dx < 0 ? 1 : -1);
+    }
+  });
+  routeWrapper.addEventListener('mouseleave', () => { routeMouseDown = false; });
+
+  function resetBars() {
+    ALL_GRADES.forEach(g => routeCounts[g] = 0);
+    renderColumns();
+  }
+
+  // Initial render
+  renderColumns();
+
+  // ===== HR SIMULATION =====
+  function startSimulation() {
+    simInterval = setInterval(() => {
+      phaseTimer++;
+
+      // Cycle: rest 8s → climb 6s → cool 10s → repeat
+      if (simPhase === 'resting' && phaseTimer > 16) {
+        simPhase = 'climbing';
+        phaseTimer = 0;
+      } else if (simPhase === 'climbing' && phaseTimer > 12) {
+        simPhase = 'cooling';
+        phaseTimer = 0;
+      } else if (simPhase === 'cooling' && hr <= RECOVERY_THRESHOLD) {
+        simPhase = 'resting';
+        phaseTimer = 0;
+      }
+
+      // Adjust target HR
+      if (simPhase === 'climbing') {
+        targetHR = 140 + Math.random() * 25;
+        activeTime += 0.5;
+      } else if (simPhase === 'cooling') {
+        targetHR = 85 + Math.random() * 10;
+        restTime += 0.5;
+      } else {
+        targetHR = 78 + Math.random() * 8;
+        restTime += 0.5;
+      }
+
+      // Smooth HR changes
+      hr += (targetHR - hr) * 0.08;
+      hr += (Math.random() - 0.5) * 3;
+      hr = Math.max(60, Math.min(175, hr));
+
+      if (hr > peakHR) peakHR = hr;
+      hrHistory.push(Math.round(hr));
+
+      // Update display
+      hrNumber.textContent = Math.round(hr);
+
+      // Update state
+      updateState(hr);
+
+    }, 500);
+  }
+
+  function updateState(bpm) {
+    const prev = climbingState;
+
+    if (bpm > RECOVERY_THRESHOLD + 15) {
+      if (climbingState !== 'elevated') {
+        lastElevatedTime = Date.now();
+      }
+      climbingState = 'elevated';
+    } else if (bpm > RECOVERY_THRESHOLD) {
+      if (climbingState === 'elevated') {
+        climbingState = 'recovering';
+      }
+    } else {
+      if (climbingState === 'elevated' || climbingState === 'recovering') {
+        climbingState = 'recovered';
+        recoveryCount++;
+        if (lastElevatedTime) {
+          recoveryTimes.push((Date.now() - lastElevatedTime) / 1000);
+        }
+
+        // Auto-reset to idle after 3s
+        setTimeout(() => {
+          if (climbingState === 'recovered') climbingState = 'idle';
+        }, 3000);
+      }
+    }
+
+    // Update visuals
+    updateHRVisuals();
+  }
+
+  const edgeGlow = document.getElementById('edgeGlow');
+
+  function updateHRVisuals() {
+    // Reset all bars
+    barRed.classList.remove('active');
+    barYellow.classList.remove('active');
+    barGreen.classList.remove('active');
+    readyLabel.classList.remove('visible');
+    edgeGlow.classList.remove('visible');
+
+    switch (climbingState) {
+      case 'idle':
+        hrHeart.style.color = '#666';
+        hrHeart.classList.remove('pulsing');
+        break;
+      case 'elevated':
+        barRed.classList.add('active');
+        hrHeart.style.color = '#666';
+        hrHeart.classList.remove('pulsing');
+        break;
+      case 'recovering':
+        barYellow.classList.add('active');
+        hrHeart.style.color = '#666';
+        hrHeart.classList.remove('pulsing');
+        break;
+      case 'recovered':
+        barGreen.classList.add('active');
+        edgeGlow.classList.add('visible');
+        readyLabel.classList.add('visible');
+        hrHeart.style.color = '#30d158';
+        hrHeart.classList.add('pulsing');
+        break;
+    }
+  }
+
+  // ===== SUMMARY =====
+  function renderSummary() {
+    const duration = sessionStart ? (Date.now() - sessionStart) / 1000 : 0;
+
+    document.getElementById('statDuration').textContent = formatTime(duration);
+    document.getElementById('statPeakHR').textContent = Math.round(peakHR);
+    document.getElementById('statActive').textContent = formatTime(activeTime);
+    document.getElementById('statRest').textContent = formatTime(restTime);
+    document.getElementById('statRecoveries').textContent = recoveryCount;
+
+    const avgRec = recoveryTimes.length > 0
+      ? recoveryTimes.reduce((a, b) => a + b, 0) / recoveryTimes.length
+      : 0;
+    document.getElementById('statAvgRecovery').textContent = formatTime(avgRec);
+
+    // Draw HR chart
+    drawHRChart();
+
+    // Route pyramid
+    renderPyramid();
+  }
+
+  function formatTime(seconds) {
+    const m = Math.floor(seconds / 60);
+    const s = Math.floor(seconds % 60);
+    if (m >= 60) return Math.floor(m / 60) + 'h ' + (m % 60) + 'm';
+    return m + 'm ' + s + 's';
+  }
+
+  function drawHRChart() {
+    const canvas = document.getElementById('hrChart');
+    const ctx = canvas.getContext('2d');
+    const dpr = window.devicePixelRatio || 1;
+
+    canvas.width = canvas.offsetWidth * dpr;
+    canvas.height = canvas.offsetHeight * dpr;
+    ctx.scale(dpr, dpr);
+
+    const w = canvas.offsetWidth;
+    const h = canvas.offsetHeight;
+
+    if (hrHistory.length < 2) return;
+
+    const minHR = Math.min(...hrHistory) - 5;
+    const maxHR = Math.max(...hrHistory) + 5;
+    const range = maxHR - minHR || 1;
+
+    // Draw threshold line
+    const thresholdY = h - ((RECOVERY_THRESHOLD - minHR) / range) * h;
+    ctx.setLineDash([3, 3]);
+    ctx.strokeStyle = 'rgba(48,209,88,0.35)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(0, thresholdY);
+    ctx.lineTo(w, thresholdY);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    // Draw HR line
+    const gradient = ctx.createLinearGradient(0, 0, 0, h);
+    gradient.addColorStop(0, '#ff3b30');
+    gradient.addColorStop(1, '#ff9500');
+
+    ctx.strokeStyle = gradient;
+    ctx.lineWidth = 1.5;
+    ctx.lineJoin = 'round';
+    ctx.beginPath();
+
+    const step = w / (hrHistory.length - 1);
+    hrHistory.forEach((val, i) => {
+      const x = i * step;
+      const y = h - ((val - minHR) / range) * h;
+      if (i === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    });
+    ctx.stroke();
+
+    // Fill under curve
+    const fillGrad = ctx.createLinearGradient(0, 0, 0, h);
+    fillGrad.addColorStop(0, 'rgba(255,59,48,0.15)');
+    fillGrad.addColorStop(1, 'rgba(255,149,0,0.02)');
+
+    ctx.lineTo(w, h);
+    ctx.lineTo(0, h);
+    ctx.closePath();
+    ctx.fillStyle = fillGrad;
+    ctx.fill();
+  }
+
+  function renderPyramid() {
+    const container = document.getElementById('summaryPyramid');
+    container.innerHTML = '';
+
+    const maxCount = Math.max(...Object.values(routeCounts), 1);
+    const colors = { 2: '#5ac8fa', 3: '#007aff', 4: '#5856d6', 5: '#af52de', 6: '#ff2d55' };
+
+    for (const [grade, count] of Object.entries(routeCounts)) {
+      if (count === 0) continue;
+      const pct = (count / maxCount) * 70 + 10;
+      const row = document.createElement('div');
+      row.className = 'pyramid-row';
+      row.innerHTML = `
+        <div class="pyramid-label" style="color:${colors[grade]}">V${grade}</div>
+        <div class="pyramid-bar" style="width:${pct}%;background:${colors[grade]}99"></div>
+        <div class="pyramid-count">${count}</div>
+      `;
+      container.appendChild(row);
+    }
+
+    if (totalSends === 0) {
+      container.innerHTML = '<div style="font-size:9px;color:#444">No routes logged</div>';
+    }
+  }
+</script>
+
+</body>
+</html>
