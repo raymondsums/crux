@@ -6,18 +6,19 @@ struct RouteLoggerView: View {
     @ObservedObject var settings: CruxSettings
 
     @State private var visibleStart: Int?
+    @State private var totalBounce: Bool = false
 
     private var startGrade: Int {
         visibleStart ?? settings.gradeRangeStart
     }
 
     private var visibleGrades: [Int] {
-        let end = min(startGrade + 4, settings.gradeRangeEnd)
+        let end = min(startGrade + 3, settings.gradeRangeEnd)
         return Array(startGrade...end)
     }
 
     private var canGoLeft: Bool { startGrade > 0 }
-    private var canGoRight: Bool { startGrade + 4 < 17 }
+    private var canGoRight: Bool { startGrade + 3 < 17 }
 
     var body: some View {
         VStack(spacing: 6) {
@@ -30,6 +31,14 @@ struct RouteLoggerView: View {
                 Text("\(routeLog.totalClimbs)")
                     .font(.system(.caption2, design: .rounded, weight: .bold))
                     .foregroundColor(.white)
+                    .scaleEffect(totalBounce ? 1.5 : 1.0)
+                    .animation(.spring(response: 0.3, dampingFraction: 0.5), value: totalBounce)
+                    .onChange(of: routeLog.totalClimbs) {
+                        totalBounce = true
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
+                            totalBounce = false
+                        }
+                    }
                 Text("sends")
                     .font(.system(.caption2, design: .rounded))
                     .foregroundColor(.gray)
@@ -68,38 +77,9 @@ struct RouteLoggerView: View {
                     }
             )
 
-            // Range indicator
-            HStack(spacing: 12) {
-                Button {
-                    if canGoLeft {
-                        withAnimation { visibleStart = max(startGrade - 3, 0) }
-                    }
-                } label: {
-                    Image(systemName: "chevron.left")
-                        .font(.system(size: 10, weight: .bold))
-                        .foregroundColor(canGoLeft ? .gray : .gray.opacity(0.2))
-                }
-                .buttonStyle(.plain)
-                .disabled(!canGoLeft)
-
-                Text("V\(visibleGrades.first ?? 0)–V\(visibleGrades.last ?? 0)")
-                    .font(.system(.caption2, design: .rounded, weight: .medium))
-                    .foregroundColor(.gray.opacity(0.5))
-
-                Button {
-                    if canGoRight {
-                        withAnimation { visibleStart = min(startGrade + 3, 13) }
-                    }
-                } label: {
-                    Image(systemName: "chevron.right")
-                        .font(.system(size: 10, weight: .bold))
-                        .foregroundColor(canGoRight ? .gray : .gray.opacity(0.2))
-                }
-                .buttonStyle(.plain)
-                .disabled(!canGoRight)
-            }
         }
-        .padding(.vertical, 4)
+        .padding(.top, 4)
+        .padding(.bottom, 12)
     }
 }
 
@@ -108,6 +88,8 @@ struct GradeColumn: View {
     let count: Int
     let maxCount: Int
     let onTap: () -> Void
+
+    @State private var countBounce: Bool = false
 
     private var brightness: Double {
         max(0.3, 1.0 - Double(grade) * 0.06)
@@ -126,48 +108,54 @@ struct GradeColumn: View {
     }
 
     var body: some View {
-        Button(action: onTap) {
-            VStack(spacing: 4) {
-                // Grade label at top
-                Text("V\(grade)")
-                    .font(.system(.caption2, design: .rounded, weight: .bold))
-                    .foregroundColor(gradeColor)
+        VStack(spacing: 4) {
+            // Grade label at top
+            Text("V\(grade)")
+                .font(.system(.caption2, design: .rounded, weight: .bold))
+                .foregroundColor(gradeColor)
 
-                // Vertical bar
-                GeometryReader { geo in
-                    ZStack(alignment: .bottom) {
-                        // Track
-                        RoundedRectangle(cornerRadius: 6)
-                            .fill(trackColor)
+            // Vertical bar
+            GeometryReader { geo in
+                ZStack(alignment: .bottom) {
+                    // Track
+                    RoundedRectangle(cornerRadius: 6)
+                        .fill(trackColor)
 
-                        // Fill growing from bottom
-                        if count > 0 {
-                            VStack {
-                                Text("\(count)")
-                                    .font(.system(.caption2, design: .rounded, weight: .bold))
-                                    .foregroundColor(.white)
-                                    .padding(.top, 4)
-                                Spacer()
-                            }
-                            .frame(
-                                width: geo.size.width,
-                                height: max(
-                                    CGFloat(count) / CGFloat(maxCount) * geo.size.height,
-                                    24
-                                )
-                            )
-                            .background(
-                                RoundedRectangle(cornerRadius: 6)
-                                    .fill(fillColor)
-                            )
-                            .animation(.spring(response: 0.3), value: count)
+                    // Fill growing from bottom
+                    if count > 0 {
+                        VStack {
+                            Text("\(count)")
+                                .font(.system(.caption2, design: .rounded, weight: .bold))
+                                .foregroundColor(.white)
+                                .scaleEffect(countBounce ? 1.5 : 1.0)
+                                .animation(.spring(response: 0.3, dampingFraction: 0.5), value: countBounce)
+                                .onChange(of: count) {
+                                    countBounce = true
+                                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
+                                        countBounce = false
+                                    }
+                                }
+                                .padding(.top, 4)
+                            Spacer()
                         }
+                        .frame(
+                            width: geo.size.width,
+                            height: max(
+                                CGFloat(count) / CGFloat(maxCount) * geo.size.height,
+                                24
+                            )
+                        )
+                        .background(
+                            RoundedRectangle(cornerRadius: 6)
+                                .fill(fillColor)
+                        )
+                        .animation(.spring(response: 0.3), value: count)
                     }
                 }
             }
-            .contentShape(Rectangle())
         }
-        .buttonStyle(.plain)
+        .contentShape(Rectangle())
+        .onTapGesture { onTap() }
     }
 }
 

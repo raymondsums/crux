@@ -199,21 +199,21 @@
   .start-btn {
     display: flex;
     align-items: center;
-    gap: 6px;
-    background: #30d158;
+    justify-content: center;
+    background: transparent;
     color: #fff;
-    border: none;
+    border: 1.5px solid rgba(255,255,255,0.35);
     border-radius: 20px;
-    padding: 8px 18px;
+    padding: 8px 40px;
     font-size: 13px;
     font-weight: 700;
     font-family: inherit;
     cursor: pointer;
-    transition: transform 0.15s, background 0.2s;
+    transition: transform 0.15s, border-color 0.2s;
     position: relative;
     overflow: hidden;
   }
-  .start-btn:active { transform: scale(0.95); background: #28b84c; }
+  .start-btn:active { transform: scale(0.95); border-color: rgba(255,255,255,0.6); }
 
   .start-btn::after {
     content: '';
@@ -225,9 +225,9 @@
     background: linear-gradient(
       105deg,
       transparent 20%,
-      rgba(255,255,255,0.25) 45%,
-      rgba(255,255,255,0.4) 50%,
-      rgba(255,255,255,0.25) 55%,
+      rgba(255,255,255,0.15) 45%,
+      rgba(255,255,255,0.25) 50%,
+      rgba(255,255,255,0.15) 55%,
       transparent 80%
     );
     animation: shimmer 3s ease-in-out infinite;
@@ -238,6 +238,7 @@
     40% { left: 120%; }
     100% { left: 120%; }
   }
+
 
   .settings-btn {
     background: none;
@@ -412,6 +413,7 @@
     align-items: center;
     justify-content: center;
     gap: 8px;
+    padding: 40px 0 0;
     opacity: 0;
     pointer-events: none;
     transition: opacity 0.2s ease;
@@ -424,7 +426,7 @@
   }
 
   .action-btn {
-    width: 120px;
+    width: 150px;
     padding: 10px 0;
     border: none;
     border-radius: 12px;
@@ -458,6 +460,32 @@
     display: flex;
     align-items: center;
     justify-content: center;
+    margin-top: auto;
+    margin-bottom: 20px;
+  }
+
+  /* Resume state */
+  .hr-resume {
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+  }
+
+  .hr-resume.visible {
+    display: flex;
+  }
+
+  .hr-resume .resume-icon {
+    font-size: 32px;
+    color: #30d158;
+  }
+
+  .hr-resume .resume-label {
+    font-size: 14px;
+    font-weight: 700;
+    color: #fff;
   }
 
   /* Pulse animation */
@@ -474,6 +502,8 @@
     padding: 24px 16px 16px;
     justify-content: flex-start;
     gap: 0;
+    padding-bottom: 24px;
+    background: #000;
   }
 
   .route-header {
@@ -495,6 +525,15 @@
     font-size: 9px;
     font-weight: 700;
     color: #fff;
+  }
+
+  .route-header .count-right .sends-num {
+    display: inline-block;
+    transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+
+  .route-header .count-right .sends-num.bounce {
+    transform: scale(1.5);
   }
   .route-header .count-right span {
     color: #666;
@@ -567,6 +606,12 @@
     font-size: 10px;
     font-weight: 800;
     color: #fff;
+    display: inline-block;
+    transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+
+  .vbar-count.bounce {
+    transform: scale(1.5);
   }
 
   /* Swipe arrows */
@@ -913,7 +958,7 @@
             <div class="heart-icon">♥</div>
           </div>
         </div>
-        <button class="start-btn" id="startBtn">▶ Start Climb</button>
+        <button class="start-btn" id="startBtn">Start Climb</button>
       </div>
 
       <!-- HR Active Screen -->
@@ -928,12 +973,16 @@
         </div>
 
         <div class="hr-center">
-          <div class="hr-group">
+          <div class="hr-group" id="hrGroup">
             <div class="hr-display">
               <span class="hr-heart" id="hrHeart">♥</span>
               <span class="hr-number" id="hrNumber">--</span>
             </div>
             <div class="hr-unit">BPM</div>
+          </div>
+          <div class="hr-resume" id="hrResume">
+            <span class="resume-icon">▶</span>
+            <span class="resume-label">Resume</span>
           </div>
         </div>
 
@@ -952,18 +1001,13 @@
       <div class="page hidden-down" id="routeScreen">
         <div class="route-header">
           <div class="label-left">ROUTES</div>
-          <div class="count-right"><span id="totalSends">0</span> <span>sends</span></div>
+          <div class="count-right"><span id="totalSends" class="sends-num">0</span> <span>sends</span></div>
         </div>
 
         <div class="route-columns-wrapper" id="routeWrapper">
           <div class="route-columns" id="routeColumns"></div>
         </div>
 
-        <div class="swipe-arrows">
-          <button class="swipe-arrow" id="swipeLeft">‹</button>
-          <span class="swipe-range" id="swipeRange"></span>
-          <button class="swipe-arrow" id="swipeRight">›</button>
-        </div>
       </div>
 
       <!-- Summary Screen -->
@@ -1042,7 +1086,7 @@
   let routeCounts = {};
   ALL_GRADES.forEach(g => routeCounts[g] = 0);
   let totalSends = 0;
-  const VISIBLE_COUNT = 5;
+  const VISIBLE_COUNT = 4;
   let visibleStart = 2; // show V2–V6 by default
 
   // Session stats
@@ -1144,11 +1188,22 @@
     endWorkout();
   });
 
+  const hrGroup = document.getElementById('hrGroup');
+  const hrResume = document.getElementById('hrResume');
+
   document.getElementById('pauseBtn').addEventListener('click', () => {
     actionSheet.classList.remove('visible');
-    // Pause simulation for demo
     clearInterval(simInterval);
     stopElapsedTimer();
+    hrGroup.style.display = 'none';
+    hrResume.classList.add('visible');
+  });
+
+  hrResume.addEventListener('click', () => {
+    hrGroup.style.display = '';
+    hrResume.classList.remove('visible');
+    startSimulation();
+    startElapsedTimer();
   });
 
   document.getElementById('cancelBtn').addEventListener('click', () => {
@@ -1161,9 +1216,6 @@
     clearInterval(simInterval);
     stopElapsedTimer();
 
-    swipeEndThumb.style.left = THUMB_PAD + 'px';
-    swipeEndFill.style.width = '0%';
-
     hrScreen.classList.add('hidden-up');
     routeScreen.classList.add('hidden-down');
     pageDots.classList.remove('visible');
@@ -1174,6 +1226,18 @@
 
   // ===== DONE =====
   doneBtn.addEventListener('click', () => {
+    if (viewingFromHistory) {
+      // Go back to history
+      viewingFromHistory = false;
+      summaryScreen.classList.add('hidden-down');
+      historyScreen.classList.remove('hidden-up', 'hidden-down');
+      homePage = 1;
+      updateHomeDots();
+      pageDots.classList.add('visible');
+      doneBtn.textContent = 'Done';
+      return;
+    }
+
     showingSummary = false;
     currentPage = 0;
     homePage = 0;
@@ -1228,13 +1292,13 @@
       return;
     }
 
-    list.innerHTML = sessionHistoryData.slice(0, 10).map(s => {
+    list.innerHTML = sessionHistoryData.slice(0, 10).map((s, i) => {
       const d = new Date(s.date);
       const dateStr = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
       const durStr = formatTime(s.duration);
 
       return `
-        <div class="session-card">
+        <div class="session-card" data-index="${i}" style="cursor:pointer">
           <div class="session-card-header">
             <span class="session-date">${dateStr}</span>
             <span class="session-duration">${durStr}</span>
@@ -1247,6 +1311,14 @@
         </div>
       `;
     }).join('');
+
+    // Make cards tappable
+    list.querySelectorAll('.session-card').forEach(card => {
+      card.addEventListener('click', () => {
+        const idx = parseInt(card.dataset.index);
+        showSessionDetail(sessionHistoryData[idx]);
+      });
+    });
   }
 
   function updateHomeDots() {
@@ -1262,26 +1334,35 @@
   // ===== PAGE SCROLLING =====
   const screen = document.getElementById('screen');
   screen.addEventListener('wheel', (e) => {
-    if (showingSummary) return;
-    e.preventDefault();
+    if (showingSummary || viewingFromHistory) return;
 
     // Home screen scrolling (start ↔ history)
     if (!isActive) {
       if (e.deltaY > 0 && homePage === 0) {
+        e.preventDefault();
         homePage = 1;
         startScreen.classList.add('hidden-up');
         historyScreen.classList.remove('hidden-down', 'hidden-up');
         updateHomeDots();
       } else if (e.deltaY < 0 && homePage === 1) {
-        homePage = 0;
-        historyScreen.classList.add('hidden-down');
-        startScreen.classList.remove('hidden-down', 'hidden-up');
-        updateHomeDots();
+        const list = document.getElementById('historyList');
+        if (list.scrollTop <= 0) {
+          e.preventDefault();
+          homePage = 0;
+          historyScreen.classList.add('hidden-down');
+          startScreen.classList.remove('hidden-down', 'hidden-up');
+          updateHomeDots();
+        }
+      } else if (homePage === 1) {
+        // Allow scrolling within history list
+      } else {
+        e.preventDefault();
       }
       return;
     }
 
     // Active workout scrolling (HR ↔ routes)
+    e.preventDefault();
     if (e.deltaY > 0 && currentPage === 0) {
       currentPage = 1;
       hrScreen.classList.add('hidden-up');
@@ -1378,17 +1459,19 @@
         routeCounts[grade]++;
         totalSends++;
         totalSendsEl.textContent = totalSends;
+        bounceSends();
         renderColumns();
+        // Bounce the count inside the tapped grade's bar
+        const updatedCol = document.querySelector(`.grade-col[data-grade="${grade}"] .vbar-count`);
+        if (updatedCol) {
+          updatedCol.classList.add('bounce');
+          setTimeout(() => updatedCol.classList.remove('bounce'), 150);
+        }
       });
 
       container.appendChild(col);
     });
 
-    // Update range label and arrow states
-    const end = Math.min(visibleStart + VISIBLE_COUNT - 1, ALL_GRADES.length - 1);
-    document.getElementById('swipeRange').textContent = `V${visibleStart}–V${end}`;
-    document.getElementById('swipeLeft').disabled = visibleStart <= 0;
-    document.getElementById('swipeRight').disabled = visibleStart + VISIBLE_COUNT >= ALL_GRADES.length;
   }
 
   const STEP = 3;
@@ -1400,9 +1483,6 @@
     renderColumns();
   }
 
-  // Arrow buttons
-  document.getElementById('swipeLeft').addEventListener('click', () => shiftGrades(-1));
-  document.getElementById('swipeRight').addEventListener('click', () => shiftGrades(1));
 
   // Touch swipe on the route columns
   let routeTouchStartX = 0;
@@ -1437,6 +1517,11 @@
   function resetBars() {
     ALL_GRADES.forEach(g => routeCounts[g] = 0);
     renderColumns();
+  }
+
+  function bounceSends() {
+    totalSendsEl.classList.add('bounce');
+    setTimeout(() => totalSendsEl.classList.remove('bounce'), 150);
   }
 
   // Initial render
@@ -1531,18 +1616,19 @@
 
     switch (climbingState) {
       case 'idle':
-        hrHeart.style.color = '#666';
-        hrHeart.classList.remove('pulsing');
+        barGreen.classList.add('active');
+        hrHeart.style.color = '#30d158';
+        hrHeart.classList.add('pulsing');
         break;
       case 'elevated':
         barRed.classList.add('active');
-        hrHeart.style.color = '#666';
-        hrHeart.classList.remove('pulsing');
+        hrHeart.style.color = '#ff3b30';
+        hrHeart.classList.add('pulsing');
         break;
       case 'recovering':
         barYellow.classList.add('active');
-        hrHeart.style.color = '#666';
-        hrHeart.classList.remove('pulsing');
+        hrHeart.style.color = '#ffcc00';
+        hrHeart.classList.add('pulsing');
         break;
       case 'recovered':
         barGreen.classList.add('active');
@@ -1552,6 +1638,39 @@
         hrHeart.classList.add('pulsing');
         break;
     }
+  }
+
+  // ===== SESSION DETAIL FROM HISTORY =====
+  let viewingFromHistory = false;
+
+  function showSessionDetail(s) {
+    viewingFromHistory = true;
+
+    document.getElementById('statDuration').textContent = formatTime(s.duration);
+    document.getElementById('statPeakHR').textContent = s.peakHR;
+    document.getElementById('statActive').textContent = formatTime(s.activeTime);
+    document.getElementById('statRest').textContent = formatTime(s.restTime);
+    document.getElementById('statRecoveries').textContent = s.recoveries;
+
+    const avgRec = s.avgRecovery || 0;
+    document.getElementById('statAvgRecovery').textContent = formatTime(avgRec);
+
+    // Set route counts from saved session for pyramid
+    routeCounts = { ...s.climbs };
+    totalSends = s.totalClimbs;
+    renderPyramid();
+
+    // No HR history for past sessions, clear canvas
+    hrHistory = [];
+    drawHRChart();
+
+    // Transition — hide both home screens
+    historyScreen.classList.add('hidden-up');
+    startScreen.classList.add('hidden-up');
+    pageDots.classList.remove('visible');
+    summaryScreen.classList.remove('hidden-down', 'hidden-up');
+
+    doneBtn.textContent = 'Back';
   }
 
   // ===== SUMMARY =====
