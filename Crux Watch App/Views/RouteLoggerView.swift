@@ -17,8 +17,8 @@ struct RouteLoggerView: View {
         return Array(startGrade...end)
     }
 
-    private var canGoLeft: Bool { startGrade > 0 }
-    private var canGoRight: Bool { startGrade + 3 < 17 }
+    private var canGoLeft: Bool { startGrade > settings.gradeRangeStart }
+    private var canGoRight: Bool { startGrade + 3 < settings.gradeRangeEnd }
 
     var body: some View {
         VStack(spacing: 6) {
@@ -76,10 +76,12 @@ struct RouteLoggerView: View {
                         }
                     }
             )
+            .frame(maxHeight: .infinity)
 
         }
         .padding(.top, 4)
-        .padding(.bottom, 12)
+        .padding(.bottom, 6)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 }
 
@@ -109,11 +111,6 @@ struct GradeColumn: View {
 
     var body: some View {
         VStack(spacing: 4) {
-            // Grade label at top
-            Text("V\(grade)")
-                .font(.system(.caption2, design: .rounded, weight: .bold))
-                .foregroundColor(gradeColor)
-
             // Vertical bar
             GeometryReader { geo in
                 ZStack(alignment: .bottom) {
@@ -153,6 +150,11 @@ struct GradeColumn: View {
                     }
                 }
             }
+
+            // Grade label below the bar
+            Text("V\(grade)")
+                .font(.system(.caption2, design: .rounded, weight: .bold))
+                .foregroundColor(gradeColor)
         }
         .contentShape(Rectangle())
         .onTapGesture { onTap() }

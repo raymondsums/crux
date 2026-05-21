@@ -5,7 +5,7 @@ struct HeartRateView: View {
 
     @State private var pulseScale: CGFloat = 1.0
     @State private var rippleScale: CGFloat = 0.8
-    @State private var rippleOpacity: Double = 0
+    @State private var rippleOpacity: Double = 0.4
 
     var body: some View {
         ZStack {
@@ -72,7 +72,6 @@ struct HeartRateView: View {
             Spacer()
 
             Button {
-                workoutManager.requestAuthorization()
                 workoutManager.startWorkout()
             } label: {
                 Label("Start Climb", systemImage: "play.fill")
@@ -80,6 +79,7 @@ struct HeartRateView: View {
             }
             .buttonStyle(.borderedProminent)
             .tint(.green)
+            .shimmer()
         }
     }
 
@@ -107,22 +107,15 @@ struct HeartRateView: View {
 
             // Heart rate number
             VStack(spacing: 2) {
-                HStack(alignment: .firstTextBaseline, spacing: 2) {
-                    Image(systemName: "heart.fill")
-                        .font(.system(size: 16))
-                        .foregroundColor(workoutManager.climbingState == .recovered ? .green : .gray)
-
-                    Text("\(Int(workoutManager.currentHeartRate))")
-                        .font(.system(size: 64, weight: .bold, design: .rounded))
-                        .foregroundColor(.white)
-                        .contentTransition(.numericText())
-                }
+                Text("\(Int(workoutManager.currentHeartRate))")
+                    .font(.system(size: 100, weight: .bold, design: .rounded))
+                    .foregroundColor(.white)
+                    .contentTransition(.numericText())
 
                 Text("BPM")
                     .font(.system(.caption2, design: .rounded))
                     .foregroundColor(.gray)
             }
-            .padding(.top, 24)
 
             Spacer()
 
@@ -136,7 +129,8 @@ struct HeartRateView: View {
                     .foregroundColor(.gray.opacity(0.5))
             }
         }
-        .padding(.vertical, 8)
+        .padding(.top, 24)
+        .padding(.bottom, 32)
         .onLongPressGesture(minimumDuration: 0.5) {
             workoutManager.showingActionSheet = true
         }
@@ -159,28 +153,34 @@ struct HeartRateView: View {
         ZStack {
             Color.black.ignoresSafeArea()
 
-            VStack(spacing: 8) {
-                Button {
-                    workoutManager.pauseWorkout()
-                } label: {
-                    Text("Pause")
-                        .font(.system(.body, design: .rounded, weight: .bold))
-                        .frame(width: 120)
-                }
-                .buttonStyle(.borderedProminent)
-                .tint(.yellow.opacity(0.3))
-                .foregroundColor(.yellow)
+            VStack {
+                Spacer()
 
-                Button {
-                    workoutManager.endWorkout()
-                } label: {
-                    Text("End Workout")
-                        .font(.system(.body, design: .rounded, weight: .bold))
-                        .frame(width: 120)
+                VStack(spacing: 8) {
+                    Button {
+                        workoutManager.pauseWorkout()
+                    } label: {
+                        Text("Pause")
+                            .font(.system(.body, design: .rounded, weight: .bold))
+                            .frame(width: 120)
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .tint(.yellow.opacity(0.3))
+                    .foregroundColor(.yellow)
+
+                    Button {
+                        workoutManager.endWorkout()
+                    } label: {
+                        Text("End Workout")
+                            .font(.system(.body, design: .rounded, weight: .bold))
+                            .frame(width: 120)
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .tint(.red.opacity(0.3))
+                    .foregroundColor(.red)
                 }
-                .buttonStyle(.borderedProminent)
-                .tint(.red.opacity(0.3))
-                .foregroundColor(.red)
+
+                Spacer()
 
                 Button {
                     workoutManager.showingActionSheet = false
@@ -193,6 +193,7 @@ struct HeartRateView: View {
                 .frame(width: 32, height: 32)
                 .background(Color.white.opacity(0.1))
                 .clipShape(Circle())
+                .padding(.bottom, 4)
             }
         }
     }
@@ -285,6 +286,45 @@ struct SettingsView: View {
             }
             .padding()
         }
+    }
+}
+
+// MARK: - Shimmer
+
+struct Shimmer: ViewModifier {
+    @State private var animate = false
+
+    func body(content: Content) -> some View {
+        content
+            .overlay {
+                GeometryReader { geo in
+                    let w = geo.size.width
+                    let band = max(w * 0.7, 1)
+                    LinearGradient(
+                        stops: [
+                            .init(color: .clear, location: 0.0),
+                            .init(color: .white.opacity(0.18), location: 0.45),
+                            .init(color: .white.opacity(0.34), location: 0.5),
+                            .init(color: .white.opacity(0.18), location: 0.55),
+                            .init(color: .clear, location: 1.0),
+                        ],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                    .frame(width: band)
+                    .offset(x: animate ? w + band : -band)
+                    .animation(.linear(duration: 2.6).repeatForever(autoreverses: false), value: animate)
+                }
+                .allowsHitTesting(false)
+            }
+            .mask { content }
+            .onAppear { animate = true }
+    }
+}
+
+extension View {
+    func shimmer() -> some View {
+        modifier(Shimmer())
     }
 }
 

@@ -4,9 +4,12 @@ struct ContentView: View {
     @EnvironmentObject var workoutManager: WorkoutManager
     @StateObject private var routeLog = RouteLog()
     @StateObject private var history = SessionHistory()
+    @AppStorage("hasOnboarded") private var hasOnboarded = false
 
     var body: some View {
-        if workoutManager.showingSummary {
+        if !hasOnboarded {
+            OnboardingView(hasOnboarded: $hasOnboarded)
+        } else if workoutManager.showingSummary {
             SummaryView(
                 routeLog: routeLog,
                 settings: workoutManager.settings

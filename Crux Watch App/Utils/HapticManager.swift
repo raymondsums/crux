@@ -1,3 +1,4 @@
+import Foundation
 import WatchKit
 
 struct HapticManager {
@@ -10,10 +11,19 @@ struct HapticManager {
     }
 
     static func workoutStarted() {
-        WKInterfaceDevice.current().play(.start)
+        doubleTap()
     }
 
     static func workoutEnded() {
-        WKInterfaceDevice.current().play(.stop)
+        doubleTap()
+    }
+
+    /// Two quick taps — no audible tone, unlike .start / .stop.
+    private static func doubleTap() {
+        let device = WKInterfaceDevice.current()
+        device.play(.click)
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.18) {
+            device.play(.click)
+        }
     }
 }

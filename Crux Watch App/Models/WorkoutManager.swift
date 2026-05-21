@@ -27,6 +27,7 @@ class WorkoutManager: NSObject, ObservableObject {
     // Workout session
     private var session: HKWorkoutSession?
     private var builder: HKLiveWorkoutBuilder?
+    private var heartRateQuery: HKAnchoredObjectQuery?
 
     // State
     @Published var isActive = false
@@ -91,19 +92,25 @@ class WorkoutManager: NSObject, ObservableObject {
 
     // MARK: - Authorization
 
-    func requestAuthorization() {
+    func requestAuthorization(completion: (() -> Void)? = nil) {
         let typesToShare: Set<HKSampleType> = [
             HKObjectType.workoutType()
         ]
 
-        let typesToRead: Set<HKObjectType> = [
-            HKObjectType.quantityType(forIdentifier: .heartRate)!,
-            HKObjectType.quantityType(forIdentifier: .restingHeartRate)!
-        ]
+        var typesToRead: Set<HKObjectType> = []
+        if let hr = HKObjectType.quantityType(forIdentifier: .heartRate) {
+            typesToRead.insert(hr)
+        }
+        if let resting = HKObjectType.quantityType(forIdentifier: .restingHeartRate) {
+            typesToRead.insert(resting)
+        }
 
-        healthStore.requestAuthorization(toShare: typesToShare, toRead: typesToRead) { success, error in
+        healthStore.requestAuthorization(toShare: typesToShare, read: typesToRead) { success, error in
             if let error = error {
                 print("HealthKit authorization failed: \(error.localizedDescription)")
+            }
+            DispatchQueue.main.async {
+                completion?()
             }
         }
     }
@@ -176,6 +183,10 @@ class WorkoutManager: NSObject, ObservableObject {
     func endWorkout() {
         session?.end()
         stopElapsedTimer()
+        if let query = heartRateQuery {
+            healthStore.stop(query)
+            heartRateQuery = nil
+        }
 
         DispatchQueue.main.async {
             self.isActive = false
@@ -228,6 +239,7 @@ class WorkoutManager: NSObject, ObservableObject {
             self?.processHeartRateSamples(samples)
         }
 
+        heartRateQuery = query
         healthStore.execute(query)
     }
 

@@ -1,4 +1,5 @@
 import Foundation
+import Combine
 
 class CruxSettings: ObservableObject {
     private let defaults = UserDefaults.standard
